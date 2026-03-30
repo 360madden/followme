@@ -1,4 +1,4 @@
--- FollowMe.MultiBox | v0.1.0 | 210 chars (approx — maintained at finalization)
+-- FollowMe MultiBox | v0.1.0 | 9,784 chars
 -- Research findings (2026-03-30):
 --   Inspect.Unit.Detail("player").coordX / .coordY / .coordZ — VERIFIED
 --   Command.Message.Broadcast("tell", target, msgId, data) — VERIFIED (private, invisible in chat)

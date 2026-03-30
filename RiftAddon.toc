@@ -1,11 +1,11 @@
 Identifier = "FollowMe"
 Name = "FollowMe"
-NameShort = "CL"
-Description = "Segmented color-strip telemetry for RIFT."
-Author = "360madden"
-Email = "360madden@gmail.com"
+NameShort = "FM"
+Description = "Multibox leader/follower position and state relay via optical color strip."
+Author = "Joey"
+Email = ""
 Website = ""
-Version = "0.3.0"
+Version = "0.1.0"
 Environment = "4.4"
 RunOnStartup = {
   "Core/Config.lua",

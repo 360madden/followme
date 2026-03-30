@@ -1,3 +1,4 @@
+-- FollowMe Render | v0.1.0 | 3,545 chars
 FollowMe = FollowMe or {}
 FollowMe.Render = {}
 
@@ -117,3 +118,5 @@ function FollowMe.Render.Update(renderState, symbols)
 
   return changed
 end
+
+-- FollowMe Render | v0.1.0 | END

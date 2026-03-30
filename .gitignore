@@ -1,3 +1,4 @@
+# Visual Studio & Build
 .vs/
 **/bin/
 **/obj/
@@ -5,5 +6,24 @@ TestResults/
 artifacts/
 *.user
 *.suo
+*.sln.docstates
+
+# Compiled binaries & artifacts
+*.dll
+*.exe
+*.pdb
+*.nupkg
+
+# Temp files
+*.tmp
+*~
+~$*
+
+# OS
 Thumbs.db
 desktop.ini
+.DS_Store
+
+# OneDrive & cloud sync
+~*
+*.sync.conflict

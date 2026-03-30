@@ -1,3 +1,4 @@
+-- FollowMe Bootstrap | v0.1.0 | 7,325 chars
 FollowMe = FollowMe or {}
 FollowMe.Bootstrap = {}
 
@@ -226,3 +227,5 @@ Command.Event.Attach(
   FollowMe.Bootstrap.OnUpdateBegin,
   "FollowMe.Bootstrap.OnUpdateBegin"
 )
+
+-- FollowMe Bootstrap | v0.1.0 | END

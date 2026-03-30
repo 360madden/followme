@@ -1,3 +1,4 @@
+-- FollowMe Gather | v0.1.0 | 10,589 chars
 FollowMe = FollowMe or {}
 FollowMe.Gather = {}
 
@@ -362,3 +363,5 @@ function FollowMe.Gather.BuildSyntheticPlayerStatsSnapshot()
     }
   }
 end
+
+-- FollowMe Gather | v0.1.0 | END

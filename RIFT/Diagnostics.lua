@@ -1,3 +1,4 @@
+-- FollowMe Diagnostics | v0.1.0 | 385 chars
 FollowMe = FollowMe or {}
 FollowMe.Diagnostics = {}
 
@@ -11,3 +12,5 @@ function FollowMe.Diagnostics.Log(message)
 
   print(formatted)
 end
+
+-- FollowMe Diagnostics | v0.1.0 | END

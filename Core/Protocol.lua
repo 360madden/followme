@@ -1,4 +1,4 @@
--- FollowMe Protocol | v0.3.0
+-- FollowMe Protocol | v0.1.0 | 9,784 chars
 -- Research findings (2026-03-30):
 --   Inspect.Unit.Detail("player").coordX / .coordY / .coordZ — VERIFIED (seebs.net live API)
 --   Command.Message.Broadcast("tell", targetName, id, data) — VERIFIED (private, not in chat)
@@ -339,3 +339,5 @@ function FollowMe.Protocol.BuildPlayerStatsPageFrame(snapshot, sequence, pageSch
 
   return BuildFrame(payload, frameTypes.playerStatsPage, pageSchemaId, sequence)
 end
+
+-- FollowMe Protocol | v0.1.0 | END

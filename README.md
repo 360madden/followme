@@ -1,115 +1,226 @@
 # FollowMe
 
-FollowMe is a reliability-first optical telemetry project for RIFT with four active parts:
-- a Lua addon that renders a segmented color strip in game
-- a `.NET 9` reader and CLI under `DesktopDotNet/`
-- a Windows inspector for capture review
-- a Windows HUD app that aggregates live player vitals and supported stat pages
+[![.NET 9](https://img.shields.io/badge/.NET-9-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![Lua 5.1](https://img.shields.io/badge/Lua-5.1-blue?logo=lua)](https://www.lua.org/)
+[![RIFT MMO](https://img.shields.io/badge/RIFT-MMO-FF6B35)](https://www.riftgame.com/)
+[![MIT License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-The active transport is now a reader-first encoded color strip. The older barcode/matrix baseline is archived for reference only.
+FollowMe is a **reliability-first optical telemetry system** for RIFT multiboxing. It bridges game state and controller commands via an encoded color strip at the top of the game window, enabling leader-follower gameplay without ingame addons or chat.
 
-## Current Baseline
+## How It Works
 
-This repo now targets a single live profile:
-- profile `P360C`
-- client `640x360`
-- top band `640x24`
-- `80` vertical segments at `8x24`
-- fixed `8-color` alphabet
-- fixed control markers on both edges
-- mixed live transport: fast `coreStatus` heartbeat plus rotating player stat pages
+```
+[Leader RIFT Client]                    [Follower RIFT Client]
+   ↓ Lua addon                             ↓ Lua addon
+   ├─ Renders 640×24px color strip       ├─ Renders position frame
+   └─ Encodes: position, health, target  └─ Reads own coordinates
+         ↓ (optical pixels)                   ↓ (optical pixels)
+   [FollowMe.Reader] ←── DesktopDuplication ──→ [FollowMe.Reader]
+         ├─ Decodes color strip              ├─ Decodes position
+         └─ Builds LeaderState               └─ Builds FollowerState
+              ↓ TCP (port 7742)
+         [TcpLeaderBroadcast] ────→ [TcpFollowerReceive]
+                                         ├─ Win32MovementController (WASD + mouse)
+                                         └─ Win32TargetController (/assist)
+```
 
-Current proof level:
-- offline smoke, replay, bench, build, and tests remain the validation set; rerun them after this strip-layout change
-- live capture remains centered on `DesktopDuplication` as the primary backend
-- live decode now targets a full-size strip at `origin 0,0`, `pitch 8.0`, `scale 1.0` on the `640x360` client
-- the reader still searches the legacy `0.35` live scale so older captures remain replayable
-- capture runs now emit raw BMP, annotated BMP, and JSON sidecar diagnostics under `AppData\Local\FollowMe\DesktopDotNet\out`
+**Key insight:** The color strip is the only channel between leader and follower. No TCP without first proving the optical decode works locally. This ensures the system is predictable and observable.
+
+## Features
+
+- **Optical telemetry bridge**: Position, health, resource, target state, and stats encoded as 8-color pixels
+- **Multibox support**: Leader broadcasts position via TCP relay; follower drives movement + target assist
+- **No ingame UI dependency**: All control via standalone C# HUD (Windows Forms)
+- **Reliability-first design**: CRC-16 header + CRC-32C payload; explicit reject reasons for every failed decode
+- **Live diagnostics**: Frame inspector, capture replay, synthetic smoke tests, and performance bench
+
+## Requirements
+
+- **RIFT game client** (640×360 or higher window)
+- **Windows 10 or 11**
+- **.NET 9 SDK** ([download](https://dotnet.microsoft.com/download/dotnet/9.0))
 
 ## Quick Start
 
-Prepare the RIFT window:
+### Build
 
 ```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Cli\FollowMe.Cli.csproj -- prepare-window 32 32
+cd followme-dev
+dotnet build
 ```
 
-Generate and verify a synthetic color-strip fixture:
+### Install RIFT Addon
+
+Copy the addon folder to RIFT:
 
 ```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Cli\FollowMe.Cli.csproj -- smoke
+Copy-Item -Recurse followme-dev -Destination 'C:\Program Files (x86)\RIFT\Interface\AddOns\FollowMe' -Force
 ```
 
-Replay a saved capture:
+Reload the addon ingame:
+```
+/reloadui
+```
+
+Or run the reload script:
+```powershell
+scripts\Reload-RiftUi.cmd
+```
+
+### Run Tests & Smoke Tests
 
 ```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Cli\FollowMe.Cli.csproj -- replay C:\Users\mrkoo\AppData\Local\FollowMe\DesktopDotNet\fixtures\followme-color-core.bmp
+# Unit tests
+dotnet test
+
+# Smoke: generate synthetic color-strip fixture and validate decode
+dotnet run --project DesktopDotNet\FollowMe.Cli -- smoke
+
+# Replay: test decode against a saved BMP
+dotnet run --project DesktopDotNet\FollowMe.Cli -- replay .\fixtures\followme-color-core.bmp
 ```
 
-Run the replay bench:
+### Live Capture & Decode
+
+Prepare RIFT window (640×360):
+```powershell
+dotnet run --project DesktopDotNet\FollowMe.Cli -- prepare-window 32 32
+```
+
+Capture and save live telemetry:
+```powershell
+dotnet run --project DesktopDotNet\FollowMe.Cli -- capture-dump --backend desktopdup
+```
+
+Run live decode loop (5 seconds, 100ms sample interval):
+```powershell
+dotnet run --project DesktopDotNet\FollowMe.Cli -- live 5 100 --backend desktopdup
+```
+
+### HUD & Inspector
+
+**Live stats HUD** (shows telemetry, multibox status):
+```powershell
+dotnet run --project DesktopDotNet\FollowMe.Hud
+```
+
+**Frame inspector** (visual debug, segment overlays, bit layouts):
+```powershell
+dotnet run --project DesktopDotNet\FollowMe.Inspector
+```
+
+### Multiboxing (Leader)
 
 ```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Cli\FollowMe.Cli.csproj -- bench
+dotnet run --project DesktopDotNet\FollowMe.Cli -- multibox-leader
 ```
 
-Capture the live top band:
+### Multiboxing (Follower)
 
+On the follower machine, edit `multibox.json`:
+```json
+{
+  "Mode": "Follower",
+  "TcpPort": 7742,
+  "LeaderHost": "192.168.1.100",
+  "LeaderName": "LeaderCharName",
+  "FollowDistance": 8.0,
+  "StopDistance": 3.5
+}
+```
+
+Then run:
 ```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Cli\FollowMe.Cli.csproj -- capture-dump --backend desktopdup
+dotnet run --project DesktopDotNet\FollowMe.Cli -- multibox-follower
 ```
 
-Run a short live decode:
+## Frame Types
 
-```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Cli\FollowMe.Cli.csproj -- live 5 100 --backend desktopdup
+The color strip encodes up to 8 frame types. Each frame is **24 transport bytes**:
+
+| Frame Type | ID | Purpose | Payload |
+|------------|----|---------|---------|
+| **CoreStatus** | 1 | Heartbeat | Player + target health, resource, flags |
+| **PlayerStatsPage** | 2 | Rotating stats | Vitals, armor, resistances, etc. (5 schemas) |
+| **PlayerPosition** | 3 | Leader position | x/y/z world coordinates (int32 × 100 scale) |
+| **MultiBoxState** | 4 | Combat state | In-combat flag, hostile target name (10 chars) |
+
+### Protocol Details
+
+Each frame carries:
+```
+Bytes 1–2:   Magic "CL"
+Byte 3:      Protocol/profile (0x01)
+Byte 4:      Frame type + schema
+Byte 5:      Sequence number
+Byte 6–7:    Reserved + flags
+Byte 8–9:    CRC-16 (header)
+Byte 10–21:  Payload (12 bytes, varies by type)
+Byte 22–25:  CRC-32C (payload)
 ```
 
-Open the inspector:
+**Transport:** 80 color segments (8px × 24px each) encode 64 payload symbols + 8-symbol control strip on each edge. 3 bits per color = 8-color alphabet (R, G, B, Mg, Cy, Ye, W, K).
 
-```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Inspector\FollowMe.Inspector.csproj
+## Project Structure
+
 ```
-
-Open the live HUD:
-
-```powershell
-dotnet run --project C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.Hud\FollowMe.Hud.csproj
+followme-dev/
+├── Core/                     # Lua addon (RIFT side)
+│   ├── Config.lua            # Profile, frame type definitions
+│   ├── Protocol.lua          # Frame encoding/decoding
+│   ├── Gather.lua            # Player state inspection
+│   ├── MultiBox.lua          # Position + assist frame building
+│   └── ...
+├── DesktopDotNet/            # C# solution (.NET 9)
+│   ├── FollowMe.Reader/      # Core: frame decode, telemetry aggregate
+│   ├── FollowMe.Cli/         # Commands: smoke, replay, live, bench, multibox-leader/follower
+│   ├── FollowMe.MultiBox/    # TCP relay, Win32 input, state machines
+│   ├── FollowMe.Hud/         # WinForms live stats display
+│   ├── FollowMe.Inspector/   # Diagnostic frame viewer
+│   ├── FollowMe.Tests/       # xUnit protocol + integration tests
+│   └── FollowMe.sln
+├── fixtures/                 # Test data (BMP captures)
+├── scripts/                  # Helper batch files
+├── README.md                 # This file
+├── CHANGELOG.md              # Version history
+├── ARCHITECTURE.md           # Deep dive: protocol, TCP relay, Win32 control
+├── CONTRIBUTING.md           # Dev setup, coding rules
+└── LICENSE                   # MIT
 ```
-
-Wrapper scripts:
-- [Prepare-FollowMe-640x360.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Prepare-FollowMe-640x360.cmd)
-- [Smoke-FollowMe.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Smoke-FollowMe.cmd)
-- [Bench-FollowMe.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Bench-FollowMe.cmd)
-- [Live-FollowMe.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Live-FollowMe.cmd)
-- [Open-FollowMe-Inspector.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Open-FollowMe-Inspector.cmd)
-- [Open-FollowMe-Hud.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Open-FollowMe-Hud.cmd)
-- [Reload-RiftUi.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Reload-RiftUi.cmd)
-- [Resize-RiftClient-640x360.cmd](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\scripts\Resize-RiftClient-640x360.cmd)
-
-If RIFT was already running while Lua files changed, restart the client or reload the addon before expecting `capture-dump` or `live` to see the new strip.
-`capture-dump`, `live`, and `watch` accept `--backend desktopdup|screen|printwindow`.
-Default live backend order is `DesktopDuplication`, then `ScreenBitBlt`. `PrintWindow` is now debug-only.
-`Reload-RiftUi.cmd` sends the official RIFT `/reloadui` command to the active game window so you can refresh addon changes without restarting the client.
 
 ## Outputs
 
-Reader artifacts are written under:
-`C:\Users\mrkoo\AppData\Local\FollowMe\DesktopDotNet`
+Reader artifacts are written to `AppData\Local\FollowMe\DesktopDotNet\`:
 
-Useful locations:
-- `fixtures\followme-color-core.bmp`
-- `out\followme-color-capture-dump.bmp`
-- `out\followme-color-capture-dump-annotated.bmp`
-- `out\followme-color-capture-dump.json`
-- `out\followme-color-first-reject.bmp`
+- `fixtures/followme-color-core.bmp` — Synthetic smoke-test fixture
+- `out/followme-color-capture-dump.bmp` — Live capture (raw)
+- `out/followme-color-capture-dump-annotated.bmp` — Live capture (with segment overlays)
+- `out/followme-color-capture-dump.json` — Decode metadata (offsets, CRC, symbol table)
+- `out/followme-color-first-reject.bmp` — First rejected frame (for debugging)
 
-## Source Of Truth
+## Validation
 
-- Product direction lives in [PROJECT_PROMPT.md](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\PROJECT_PROMPT.md)
-- Active desktop solution lives at [DesktopDotNet/FollowMe.sln](C:\Users\mrkoo\OneDrive\Documents\RIFT\Interface\AddOns\FollowMe\DesktopDotNet\FollowMe.sln)
-- Barcode-style and archive branches are reference only
+After any Lua addon change, reload ingame:
+```
+/reloadui
+```
 
+Or run tests:
+```powershell
+dotnet test
+dotnet run --project DesktopDotNet\FollowMe.Cli -- smoke
+```
 
-## HUD usability notes
-- The HUD now starts with **Always on top** enabled by default.
-- The transport cadence is faster, while player stat sampling is cached so `Inspect.Stat()` is not spammed every frame.
+Live capture remains the gold standard. If `capture-dump` or `live` produces rejects with a clear reason, the system is working as designed.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding conventions, and issue/PR guidelines.
+
+## License
+
+MIT — see [LICENSE](LICENSE) file.
+
+---
+
+**FollowMe | v0.1.0** — Optical telemetry bridge for RIFT multiboxing.

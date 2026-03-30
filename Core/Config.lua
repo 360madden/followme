@@ -1,13 +1,12 @@
+-- FollowMe Config | v0.1.0 | 1,865 chars
 FollowMe = FollowMe or {}
 
 local function Rgba(r, g, b)
   return { r / 255, g / 255, b / 255, 1.0 }
 end
-
--- FollowMe Config | v0.3.0
 FollowMe.Config = {
   addonIdentifier = "FollowMe",
-  addonVersion = "0.2.1",
+  addonVersion = "0.1.0",
   requestedLayer = 100000,
   requestedStrata = "topmost",
   showOnStartup = true,
@@ -94,3 +93,5 @@ FollowMe.Config = {
 function FollowMe.Config.GetPaletteColor(symbol)
   return FollowMe.Config.palette[symbol] or FollowMe.Config.palette[0]
 end
+
+-- FollowMe Config | v0.1.0 | END

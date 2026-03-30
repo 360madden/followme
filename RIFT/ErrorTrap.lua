@@ -1,3 +1,4 @@
+-- FollowMe ErrorTrap | v0.1.0 | 573 chars
 FollowMe = FollowMe or {}
 FollowMe.ErrorTrap = {
   lastErrorId = nil
@@ -21,3 +22,5 @@ Command.Event.Attach(
   FollowMe.ErrorTrap.OnSystemError,
   "FollowMe.ErrorTrap.OnSystemError"
 )
+
+-- FollowMe ErrorTrap | v0.1.0 | END
