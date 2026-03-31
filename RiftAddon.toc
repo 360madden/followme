@@ -1,0 +1,19 @@
+Identifier = "FollowMe"
+Name = "FollowMe"
+NameShort = "FM"
+Description = "Multibox leader/follower position and state relay via optical color strip."
+Author = "Joey D"
+Email = "360madden@gmail.com"
+Website = ""
+Version = "0.1.0"
+Environment = "4.4"
+RunOnStartup = {
+  "Core/Config.lua",
+  "Core/Gather.lua",
+  "Core/Protocol.lua",
+  "Core/MultiBox.lua",
+  "RIFT/Diagnostics.lua",
+  "RIFT/ErrorTrap.lua",
+  "RIFT/Render.lua",
+  "RIFT/Bootstrap.lua"
+}
